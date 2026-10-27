@@ -173,7 +173,7 @@ begin
   lua_createtable(L, Length(Player), 0);
 
   // fill w/ values
-  for I := 0 to High(ScreenSing.Scores.Players) do
+  for I := 0 to ScreenSing.Scores.PlayerCount - 1 do
   begin
     lua_pushInteger(L, I + 1);
     lua_pushNumber(L, ScreenSing.Scores.Players[I].RBPos);
@@ -251,14 +251,15 @@ begin
     lua_pop(L, Top);
 
   // create table
-  lua_createtable(L, Length(ScreenSing.Scores.Players), 0);
+  lua_createtable(L, ScreenSing.Scores.PlayerCount, 0);
 
   // fill w/ values
-  for I := 0 to High(ScreenSing.Scores.Players) do
+  for I := 0 to ScreenSing.Scores.PlayerCount - 1 do
   begin
     lua_pushInteger(L, I + 1);
 
-    if (ScreenSing.Scores.Players[I].Position = High(Byte)) then
+    if ((ScreenSing.Scores.Players[I].Position < 0) or
+        (ScreenSing.Scores.Players[I].Position >= ScreenSing.Scores.PositionCount)) then
       // player has no position, prevent crash by pushing nil
       lua_pushNil(L)
     else
@@ -287,14 +288,15 @@ begin
     lua_pop(L, Top);
 
   // create table
-  lua_createtable(L, Length(ScreenSing.Scores.Players), 0);
+  lua_createtable(L, ScreenSing.Scores.PlayerCount, 0);
 
   // fill w/ values
-  for I := 0 to High(ScreenSing.Scores.Players) do
+  for I := 0 to ScreenSing.Scores.PlayerCount - 1 do
   begin
     lua_pushInteger(L, I + 1);
 
-    if (ScreenSing.Scores.Players[I].Position = High(Byte)) then
+    if ((ScreenSing.Scores.Players[I].Position < 0) or
+        (ScreenSing.Scores.Players[I].Position >= ScreenSing.Scores.PositionCount)) then
       // player has no position, prevent crash by pushing nil
       lua_pushNil(L)
     else
@@ -328,82 +330,78 @@ begin
     LuaL_error(L, 'Usdx.ScreenSing.Finish is called, but sing screen is not shown.');
 end;
 
-{ ScreenSing.GetSettings - no arguments
-  returns a table filled with the data of TScreenSing }
-function ULuaScreenSing_GetSettings(L: Plua_State): Integer; cdecl;
-  var Top: Integer;
-  var I: Integer;
-  var NotesVisibleAsInt: integer;
+procedure PushPlayerFlags(L: Plua_State; const Flags: array of boolean);
+var
+  I, Entry: integer;
 begin
-  NotesVisibleAsInt := 0;
-  for I := 0 to high(ScreenSing.Settings.NotesVisible) do begin
-    if (ScreenSing.Settings.NotesVisible[I]) then begin
-      NotesVisibleAsInt := NotesVisibleAsInt + (2 ** I);
+  lua_createtable(L, Length(Flags), 0);
+  Entry := 1;
+  for I := 0 to High(Flags) do
+    if Flags[I] then
+    begin
+      lua_pushInteger(L, Entry);
+      lua_pushInteger(L, I + 1);
+      lua_settable(L, -3);
+      Inc(Entry);
     end;
+end;
+
+procedure ReadPlayerFlags(L: Plua_State; var Flags: array of boolean);
+var
+  I: integer;
+  PlayerIndex: Int64;
+begin
+  for I := 0 to High(Flags) do
+    Flags[I] := false;
+  lua_pushNil(L);
+  while lua_next(L, -2) <> 0 do
+  begin
+    if lua_isNumber(L, -1) then
+    begin
+      PlayerIndex := lua_toInteger(L, -1);
+      if (PlayerIndex >= 1) and (PlayerIndex <= Length(Flags)) then
+        Flags[PlayerIndex - 1] := true;
+    end;
+    lua_pop(L, 1);
   end;
+end;
 
-  // pop arguments
-  Top := lua_getTop(L);
-  if (Top > 0) then
-    lua_pop(L, Top);
-
-  lua_createtable(L, 0, 3);
-
-  //fill table w/ info
+function ULuaScreenSing_GetSettings(L: Plua_State): Integer; cdecl;
+begin
+  lua_settop(L, 0);
+  lua_createtable(L, 0, 4);
   lua_pushBoolean(L, ScreenSing.Settings.LyricsVisible);
   lua_setField(L, -2, 'LyricsVisible');
-
-  lua_pushBinInt(L, NotesVisibleAsInt);
+  PushPlayerFlags(L, ScreenSing.Settings.NotesVisible);
   lua_setField(L, -2, 'NotesVisible');
-
-  lua_pushBinInt(L, ScreenSing.Settings.PlayerEnabled);
+  PushPlayerFlags(L, ScreenSing.Settings.PlayerEnabled);
   lua_setField(L, -2, 'PlayerEnabled');
-
   lua_pushBoolean(L, ScreenSing.Settings.SoundEnabled);
   lua_setField(L, -2, 'SoundEnabled');
-
   Result := 1;
 end;
 
-{ ScreenSing.SetSettings - arguments: Table
-  sets all attributes of TScreenSing.Settings that are
-  unequal to nil in Table }
 function ULuaScreenSing_SetSettings(L: Plua_State): Integer; cdecl;
-  var
-    Key: String;
-    I, NotesVisibleAsInt: integer;
+var
+  Key: string;
 begin
   Result := 0;
-  NotesVisibleAsInt := 0;
-
-  // check for table on stack
   luaL_checkType(L, 1, LUA_TTABLE);
-
-  // go through table elements
   lua_pushNil(L);
-  while (lua_Next(L, 1) <> 0) do
+  while lua_next(L, 1) <> 0 do
   begin
-    Key := lowercase(lua_ToString(L, -2));
-
-    if (Key = 'lyricsvisible') and (lua_isBoolean(L, -1)) then
-      ScreenSing.settings.LyricsVisible := lua_toBoolean(L, -1)
-    else if (Key = 'notesvisible') and (lua_isTable(L, -1)) then begin
-      NotesVisibleAsInt := lua_toBinInt(L, -1);
-      for I := 0 to high(ScreenSing.settings.NotesVisible) do begin
-        ScreenSing.settings.NotesVisible[I] := NotesVisibleAsInt and (1 shl I) <> 0;
-      end;
-    end else if (Key = 'playerenabled') and (lua_isTable(L, -1)) then
-      ScreenSing.settings.PlayerEnabled := lua_toBinInt(L, -1)
-    else if (Key = 'soundenabled') and (lua_isBoolean(L, -1)) then
-      ScreenSing.settings.SoundEnabled := lua_toBoolean(L, -1);
-
-    // pop value from stack so key is on top
+    Key := LowerCase(lua_toString(L, -2));
+    if (Key = 'lyricsvisible') and lua_isBoolean(L, -1) then
+      ScreenSing.Settings.LyricsVisible := lua_toBoolean(L, -1)
+    else if (Key = 'notesvisible') and lua_isTable(L, -1) then
+      ReadPlayerFlags(L, ScreenSing.Settings.NotesVisible)
+    else if (Key = 'playerenabled') and lua_isTable(L, -1) then
+      ReadPlayerFlags(L, ScreenSing.Settings.PlayerEnabled)
+    else if (Key = 'soundenabled') and lua_isBoolean(L, -1) then
+      ScreenSing.Settings.SoundEnabled := lua_toBoolean(L, -1);
     lua_pop(L, 1);
   end;
-
-  // clear stack from table
-  lua_pop(L, lua_gettop(L));
-
+  lua_settop(L, 0);
   ScreenSing.ApplySettings;
 end;
 

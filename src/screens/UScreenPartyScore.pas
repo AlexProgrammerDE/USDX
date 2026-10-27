@@ -63,13 +63,13 @@ type
       StaticTeam3Deco:   cardinal;
       TextWinner:        cardinal;
 
-      DecoTex:          array[0..UIni.IMaxPlayerCount-1] of TTexture;
-      DecoColor:        array[0..UIni.IMaxPlayerCount-1] of Record
+      DecoTex:          array of TTexture;
+      DecoColor:        array of Record
                                         R, G, B: real;
                         end;
 
       MaxScore:          word;
-      
+
       constructor Create; override;
       destructor Destroy; override;
       function ParseInput(PressedKey: cardinal; CharCode: UCS4Char; PressedDown: boolean): boolean; override;
@@ -139,6 +139,9 @@ var
   Color: integer;
 begin
   inherited Create;
+  SetLength(DecoTex, UIni.PlayerCapacity);
+  SetLength(DecoColor, UIni.PlayerCapacity);
+
 
   TextScoreTeam1 := AddText (Theme.PartyScore.TextScoreTeam1);
   TextScoreTeam2 := AddText (Theme.PartyScore.TextScoreTeam2);

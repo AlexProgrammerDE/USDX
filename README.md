@@ -1,5 +1,49 @@
 # UltraStar Deluxe
 
+## UltraQueue and player counts
+
+This branch integrates UltraQueue with current UltraStar Deluxe. It supports arbitrary positive player counts without a fixed compiled player limit.
+Available microphone channels, memory, and display space determine the practical limit. Party modes retain their existing team rules.
+
+Set the player range in `config.ini`, then restart the game:
+
+```ini
+[Game]
+MaxPlayers=32
+Players=18
+```
+
+The player screen offers every count from one through `MaxPlayers`, with a minimum range of 24.
+If `Players` exceeds `MaxPlayers`, the game expands the range to include that count.
+Both themes use shared player templates. Singing and score layouts adapt to odd counts and split players across one or two screens.
+
+In **Options > Record**, assign a separate capture channel to each player. Assigning one input twice does not create independent microphones.
+For an XR18, USB capture channels 1 through 18 can map directly to players 1 through 18.
+If a microphone is quiet, use the recording boost and threshold controls.
+
+Configure the queue server separately:
+
+```ini
+[UltraQueue]
+URL=http://localhost:8080
+```
+
+An empty `URL` disables queue requests. The default URL retains the FSCS server address.
+The game fetches `/nextsong` when song selection opens. It reports the title and artist to `/startedplaying` and `/songfinished`.
+Requests use JSON escaping, connection and read timeouts, and a 64 KiB response limit.
+If the server is unavailable, the game logs the error and continues.
+
+Typing a letter or digit opens song search. Hold **Left Alt** for letter shortcuts, such as **Left Alt + R** for a random song.
+
+To run the focused checks, install Free Pascal with its FCL and network units, then run:
+
+```sh
+python3 test/check_players.py
+```
+
+These checks cover uneven screen splits, player indices above 255, grid bounds, palette reuse, and the queue protocol.
+They do not require a display, mixer, or external queue server.
+
 [![Build Status](https://github.com/UltraStar-Deluxe/USDX/actions/workflows/main.yml/badge.svg)](https://github.com/UltraStar-Deluxe/USDX/actions/workflows/main.yml)
 [![License](https://img.shields.io/badge/license-GPLv2-blue.svg)](LICENSE)
 
@@ -9,7 +53,7 @@ Official Project Website: https://usdx.eu/
 
 
 ### 1. About
-UltraStar Deluxe (USDX) is a free and open source karaoke game. It allows up to six players to sing along with music using microphones in order to score points, depending on the pitch of the voice and the rhythm of singing.
+UltraStar Deluxe (USDX) is a free and open source karaoke game. Players sing along with music using microphones to score points for pitch and rhythm.
 UltraStar Deluxe is a fork of the original UltraStar (developed by corvus5).
 Many features have been added like party mode, theme support and support for more audio and video formats.
 The improved stability and code quality of USDX enabled ports to Linux and macOS.

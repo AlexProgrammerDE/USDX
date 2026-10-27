@@ -1075,7 +1075,6 @@ begin
     // Copy last word
     WordArray[High(WordArray)] := FilterStr;
 
-
     for I := 0 to High(Song) do
     begin
       if not Song[i].Main then

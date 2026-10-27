@@ -80,21 +80,19 @@ const
   DEFAULT_HIGH_SCORE_SCREEN_ENTRIES = 5;
   MIN_HIGH_SCORE_SCREEN_ENTRIES = 5;
   MAX_HIGH_SCORE_SCREEN_ENTRIES = 20;
-  // TODO: the menu options only go up to 6, but there are internals that still go up to 12
-  //  IMaxPlayerCount is untouched because lowering (or raising) it causes very strange behaviour, such as:
-  //  * the game starts in a completely different language than the config specifies
-  //  * the game crashes randomly
-  //  8 and 12 players have never worked at any point in history
-  //  it all needs refactoring at some point anyway because:
-  //  * a lot of code works with the _index_ of IPlayers (instead of just the number of actual players)
-  //  * it should be possible to play with 5 players [without duplicating a lot of code]
-  //  * there might be a valid usecase for 0 players
-  IMaxPlayerCount = 12;
-  // Switch colors for players 2 and 4, since player 2 line color is used
-  // for the second part in duet, and yellow (4) looks better than red (2)
-  DefaultPlayerColors: array[0..IMaxPlayerCount-1] of integer = (1, 4, 3, 2, 5, 6, 7, 8, 9, 10, 11, 12);
-  IPlayers:     array[0..4] of UTF8String = ('1', '2', '3', '4', '6');
-  IPlayersVals: array[0..4] of integer    = ( 1 ,  2 ,  3 ,  4 ,  6 );
+  DEFAULT_PLAYER_CAPACITY = 24;
+
+var
+  PlayerCapacity: integer = DEFAULT_PLAYER_CAPACITY;
+
+type
+  TUTF8StringArray = array of UTF8String;
+  TIntegerArray = array of integer;
+
+function GetNameTemplateIndexFromKey(const Key: cardinal): integer;
+function CreateNumericOptionArray(const FirstValue, LastValue: integer): TUTF8StringArray;
+function GetPlayerColorOptionCount: integer;
+function TryGetMixedPlayerColorPair(ColorIndex: integer; out LeftColor, RightColor: integer): boolean;
 
 type
 
@@ -125,24 +123,25 @@ type
 
     public
       // Players or Teams colors
-      SingColor:      array[0..(IMaxPlayerCount-1)] of integer;
-      
-      Name:           array[0..15] of UTF8String;
-      PlayerColor:    array[0..(IMaxPlayerCount-1)] of integer;
+      SingColor:      array of integer;
+
+      Name:           array of UTF8String;
+      PlayerColor:    array of integer;
       TeamColor:      array[0..2] of integer;
 
-      PlayerAvatar:   array[0..(IMaxPlayerCount-1)] of UTF8String;
-      PlayerLevel:    array[0..(IMaxPlayerCount-1)] of integer;
+      PlayerAvatar:   array of UTF8String;
+      PlayerLevel:    array of integer;
 
       // Templates for Names Mod
       NameTeam:       array[0..2] of UTF8String;
-      NameTemplate:   array[0..(IMaxPlayerCount-1)] of UTF8String;
+      NameTemplate:   array of UTF8String;
 
       // Filename of the opened iniFile
       Filename:       IPath;
 
       // Game
       Players:        integer;
+      UltraQueueURL: UTF8String;
       Difficulty:     integer;
       Language:       integer;
       SongMenu:       integer;
@@ -468,7 +467,6 @@ const
   IJukeboxTimebarMode: array[0..2] of UTF8String = ('Current', 'Remaining', 'Total');
 
   // Recording options
-  IChannelPlayer: array[0..6] of UTF8String = ('Off', '1', '2', '3', '4', '5', '6');
   IMicBoost:      array[0..3] of UTF8String = ('Off', '+6dB', '+12dB', '+18dB');
 
   // Webcam
@@ -481,6 +479,9 @@ const
  *}
 
 var
+  IPlayers:                    TUTF8StringArray;
+  IPlayersVals:                TIntegerArray;
+  IChannelPlayer:              TUTF8StringArray;
   ILanguageTranslated:         array of UTF8String;
   ILyricsFont:                 array of UTF8String;
 
@@ -535,7 +536,7 @@ var
   ILyricsEffectTranslated:     array[0..4] of UTF8String = ('Simple', 'Zoom', 'Slide', 'Ball', 'Shift');
   INoteLinesTranslated:        array[0..1] of UTF8String = ('Off', 'On');
   IColorTranslated:            array[0..8] of UTF8String = ('Blue', 'Green', 'Pink', 'Red', 'Violet', 'Orange', 'Yellow', 'Brown', 'Black');
-  IPlayerColorTranslated:      array[0..15] of UTF8String = ('Blue', 'Red', 'Green', 'Yellow', 'Orange', 'Pink',  'Violet', 'Brown', 'Gray', 'Dark Blue', 'Sky', 'Cyan', 'Flame', 'Orchid', 'Harlequin', 'Lime');
+  IPlayerColorTranslated:      TUTF8StringArray;
 
   // for lyric colors
   ILineTranslated:             array[0..2] of UTF8String = ('Sing', 'Actual', 'Next');
@@ -567,13 +568,13 @@ var
   IJukeboxTimebarModeTranslated:      array[0..2] of UTF8String = ('Current', 'Remaining', 'Total');
 
   // Recording options
-  IChannelPlayerTranslated:    array[0..IMaxPlayerCount] of UTF8String = ('Off', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12');
+  IChannelPlayerTranslated:    TUTF8StringArray;
   IMicBoostTranslated:         array[0..3] of UTF8String = ('Off', '+6dB', '+12dB', '+18dB');
 
   // Network
   ISendNameTranslated:        array[0..1] of UTF8String = ('Off', 'On');
   IAutoModeTranslated:        array[0..2] of UTF8String = ('Off', 'Send', 'Guardar');
-  IAutoPlayerTranslated:      array[0..IMaxPlayerCount] of UTF8String = ('Player 1', 'Player 2', 'Player 3', 'Player 4', 'Player 5', 'Player 6', 'Player 7', 'Player 8', 'Player 9', 'Player 10', 'Player 11', 'Player 12', 'All');
+  IAutoPlayerTranslated:      TUTF8StringArray;
   IAutoScoreEasyTranslated:   array of UTF8String;
   IAutoScoreMediumTranslated: array of UTF8String;
   IAutoScoreHardTranslated:   array of UTF8String;
@@ -586,7 +587,7 @@ var
   IWebcamEffectTranslated:     array [0..10] of UTF8String;
 
   // Name
-  IPlayerTranslated:      array[0..(IMaxPlayerCount-1)] of UTF8String = ('Player 1', 'Player 2', 'Player 3', 'Player 4', 'Player 5', 'Player 6', 'Player 7', 'Player 8', 'Player 9', 'Player 10', 'Player 11', 'Player 12');
+  IPlayerTranslated:      TUTF8StringArray;
 
   IRed:       array[0..255] of UTF8String;
   IGreen:     array[0..255] of UTF8String;
@@ -596,6 +597,7 @@ var
 implementation
 
 uses
+  Math,
   StrUtils,
   sdl2,
   UCommandLine,
@@ -624,6 +626,143 @@ type
 
 const
   IGNORE_INDEX = -1;
+  BASE_PLAYER_COLOR_COUNT = 16;
+
+  PLAYER_COLOR_DEFAULTS: array[0..15] of UTF8String = (
+    'Blue', 'Red', 'Green', 'Yellow', 'Orange', 'Pink', 'Violet', 'Brown',
+    'Gray', 'Dark Blue', 'Sky', 'Cyan', 'Flame', 'Orchid', 'Harlequin', 'Lime'
+  );
+
+  PLAYER_COLOR_TRANSLATION_KEYS: array[0..15] of UTF8String = (
+    'OPTION_VALUE_BLUE', 'OPTION_VALUE_RED', 'OPTION_VALUE_GREEN',
+    'OPTION_VALUE_YELLOW', 'OPTION_VALUE_ORANGE', 'OPTION_VALUE_PINK',
+    'OPTION_VALUE_VIOLET', 'OPTION_VALUE_BROWN', 'OPTION_VALUE_GRAY',
+    'OPTION_VALUE_DARKBLUE', 'OPTION_VALUE_SKY', 'OPTION_VALUE_CYAN',
+    'OPTION_VALUE_FLAME', 'OPTION_VALUE_ORCHID', 'OPTION_VALUE_HARLEQUIN',
+    'OPTION_VALUE_GREENYELLOW'
+  );
+
+function GetNameTemplateIndexFromKey(const Key: cardinal): integer;
+begin
+  case Key of
+    SDLK_F1:  Result := 0;
+    SDLK_F2:  Result := 1;
+    SDLK_F3:  Result := 2;
+    SDLK_F4:  Result := 3;
+    SDLK_F5:  Result := 4;
+    SDLK_F6:  Result := 5;
+    SDLK_F7:  Result := 6;
+    SDLK_F8:  Result := 7;
+    SDLK_F9:  Result := 8;
+    SDLK_F10: Result := 9;
+    SDLK_F11: Result := 10;
+    SDLK_F12: Result := 11;
+  else
+    Result := -1;
+  end;
+end;
+
+function CreateNumericOptionArray(const FirstValue, LastValue: integer): TUTF8StringArray;
+var
+  I: integer;
+begin
+  if LastValue < FirstValue then
+  begin
+    SetLength(Result, 0);
+    Exit;
+  end;
+
+  SetLength(Result, LastValue - FirstValue + 1);
+  for I := 0 to High(Result) do
+    Result[I] := IntToStr(FirstValue + I);
+end;
+
+function GetPlayerColorOptionCount: integer;
+begin
+  Result := BASE_PLAYER_COLOR_COUNT +
+    BASE_PLAYER_COLOR_COUNT * (BASE_PLAYER_COLOR_COUNT - 1) div 2;
+end;
+
+function TryGetMixedPlayerColorPair(ColorIndex: integer; out LeftColor, RightColor: integer): boolean;
+var
+  Remaining: integer;
+  LeftCandidate: integer;
+  RightCandidate: integer;
+begin
+  Result := false;
+  LeftColor := 0;
+  RightColor := 0;
+
+  if ColorIndex <= BASE_PLAYER_COLOR_COUNT then
+    Exit;
+
+  Remaining := ColorIndex - BASE_PLAYER_COLOR_COUNT;
+  for LeftCandidate := 1 to BASE_PLAYER_COLOR_COUNT - 1 do
+    for RightCandidate := LeftCandidate + 1 to BASE_PLAYER_COLOR_COUNT do
+    begin
+      Dec(Remaining);
+      if Remaining = 0 then
+      begin
+        LeftColor := LeftCandidate;
+        RightColor := RightCandidate;
+        Exit(true);
+      end;
+    end;
+end;
+
+function GetDefaultPlayerColor(PlayerIndex: integer): integer;
+begin
+  if Length(IPlayerColorTranslated) = 0 then
+    Exit(0);
+
+  Result := (PlayerIndex mod Length(IPlayerColorTranslated)) + 1;
+end;
+
+procedure InitializePlayerOptionArrays;
+var
+  I: integer;
+  LeftColor: integer;
+  RightColor: integer;
+begin
+  SetLength(IPlayerColorTranslated, GetPlayerColorOptionCount);
+  for I := 0 to High(IPlayerColorTranslated) do
+  begin
+    if I < Length(PLAYER_COLOR_DEFAULTS) then
+      IPlayerColorTranslated[I] := PLAYER_COLOR_DEFAULTS[I]
+    else if TryGetMixedPlayerColorPair(I + 1, LeftColor, RightColor) then
+      IPlayerColorTranslated[I] := PLAYER_COLOR_DEFAULTS[LeftColor - 1] + ' + ' + PLAYER_COLOR_DEFAULTS[RightColor - 1]
+    else
+      IPlayerColorTranslated[I] := PLAYER_COLOR_DEFAULTS[I mod Length(PLAYER_COLOR_DEFAULTS)];
+  end;
+
+  SetLength(IPlayers, PlayerCapacity);
+  SetLength(IPlayersVals, PlayerCapacity);
+  for I := 0 to PlayerCapacity - 1 do
+  begin
+    IPlayers[I] := IntToStr(I + 1);
+    IPlayersVals[I] := I + 1;
+  end;
+
+  SetLength(IChannelPlayer, PlayerCapacity + 1);
+  IChannelPlayer[0] := 'Off';
+  for I := 1 to PlayerCapacity do
+    IChannelPlayer[I] := IntToStr(I);
+
+  SetLength(IChannelPlayerTranslated, PlayerCapacity + 1);
+  SetLength(IAutoPlayerTranslated, PlayerCapacity + 1);
+  SetLength(IPlayerTranslated, PlayerCapacity);
+
+  IChannelPlayerTranslated[0] := 'Off';
+  for I := 1 to PlayerCapacity do
+    IChannelPlayerTranslated[I] := IntToStr(I);
+
+  for I := 0 to PlayerCapacity - 1 do
+    IPlayerTranslated[I] := 'Player ' + IntToStr(I + 1);
+
+  for I := 0 to PlayerCapacity - 1 do
+    IAutoPlayerTranslated[I] := 'Player ' + IntToStr(I + 1);
+  IAutoPlayerTranslated[PlayerCapacity] := 'All';
+end;
 
 constructor TSafeIniFile.Create(const FileName, LogSource: string);
 begin
@@ -674,7 +813,12 @@ procedure TIni.TranslateOptionValues;
 var
   I: integer;
   Zeros: string;
+  BasePlayerColorNames: array[0..BASE_PLAYER_COLOR_COUNT-1] of UTF8String;
+  LeftColor: integer;
+  RightColor: integer;
 begin
+  InitializePlayerOptionArrays;
+
   // Load language file, fallback to config language if param is invalid
   if (Params.Language > -1) and (Params.Language < Length(ILanguage)) then
     ULanguage.Language.ChangeLanguage(ILanguage[Params.Language])
@@ -854,22 +998,18 @@ begin
   IColorTranslated[7] := ULanguage.Language.Translate('OPTION_VALUE_BROWN');
   IColorTranslated[8] := ULanguage.Language.Translate('OPTION_VALUE_BLACK');
 
-  IPlayerColorTranslated[0] := ULanguage.Language.Translate('OPTION_VALUE_BLUE');
-  IPlayerColorTranslated[1] := ULanguage.Language.Translate('OPTION_VALUE_RED');
-  IPlayerColorTranslated[2] := ULanguage.Language.Translate('OPTION_VALUE_GREEN');
-  IPlayerColorTranslated[3] := ULanguage.Language.Translate('OPTION_VALUE_YELLOW');
-  IPlayerColorTranslated[4] := ULanguage.Language.Translate('OPTION_VALUE_ORANGE');
-  IPlayerColorTranslated[5] := ULanguage.Language.Translate('OPTION_VALUE_PINK');
-  IPlayerColorTranslated[6] := ULanguage.Language.Translate('OPTION_VALUE_VIOLET');
-  IPlayerColorTranslated[7] := ULanguage.Language.Translate('OPTION_VALUE_BROWN');
-  IPlayerColorTranslated[8] := ULanguage.Language.Translate('OPTION_VALUE_GRAY');
-  IPlayerColorTranslated[9] := ULanguage.Language.Translate('OPTION_VALUE_DARKBLUE');
-  IPlayerColorTranslated[10] := ULanguage.Language.Translate('OPTION_VALUE_SKY');
-  IPlayerColorTranslated[11] := ULanguage.Language.Translate('OPTION_VALUE_CYAN');
-  IPlayerColorTranslated[12] := ULanguage.Language.Translate('OPTION_VALUE_FLAME');
-  IPlayerColorTranslated[13] := ULanguage.Language.Translate('OPTION_VALUE_ORCHID');
-  IPlayerColorTranslated[14] := ULanguage.Language.Translate('OPTION_VALUE_HARLEQUIN');
-  IPlayerColorTranslated[15] := ULanguage.Language.Translate('OPTION_VALUE_GREENYELLOW');
+  for I := 0 to High(BasePlayerColorNames) do
+    BasePlayerColorNames[I] := ULanguage.Language.Translate(PLAYER_COLOR_TRANSLATION_KEYS[I]);
+
+  for I := 0 to High(IPlayerColorTranslated) do
+  begin
+    if I < Length(BasePlayerColorNames) then
+      IPlayerColorTranslated[I] := BasePlayerColorNames[I]
+    else if TryGetMixedPlayerColorPair(I + 1, LeftColor, RightColor) then
+      IPlayerColorTranslated[I] := BasePlayerColorNames[LeftColor - 1] + ' + ' + BasePlayerColorNames[RightColor - 1]
+    else
+      IPlayerColorTranslated[I] := BasePlayerColorNames[I mod Length(BasePlayerColorNames)];
+  end;
 
   // Advanced
   ILoadAnimationTranslated[0]         := ULanguage.Language.Translate('OPTION_VALUE_OFF');
@@ -967,7 +1107,7 @@ begin
 
   // Recording options
   IChannelPlayerTranslated[0]         := ULanguage.Language.Translate('SING_OPTIONS_RECORD_NOONE');
-  for I:=1 to IMaxPlayerCount do
+  for I:=1 to PlayerCapacity do
   begin
     IChannelPlayerTranslated[I]       :=IntToStr(I);
   end;
@@ -982,11 +1122,14 @@ begin
   IAutoModeTranslated[1]         := ULanguage.Language.Translate('OPTION_VALUE_SEND');
   IAutoModeTranslated[2]         := ULanguage.Language.Translate('OPTION_VALUE_SAVE');
 
-  for I:=0 to IMaxPlayerCount-1 do
+  for I:=0 to PlayerCapacity-1 do
   begin
-    IAutoPlayerTranslated[I]       :=ULanguage.Language.Translate('OPTION_PLAYER_' + IntToStr(I));
+    IAutoPlayerTranslated[I]       := ULanguage.Language.Translate('OPTION_PLAYER_' + IntToStr(I + 1));
   end;
-  IAutoPlayerTranslated[12]         := ULanguage.Language.Translate('OPTION_ALL_PLAYERS');
+  IAutoPlayerTranslated[PlayerCapacity] := ULanguage.Language.Translate('OPTION_ALL_PLAYERS');
+
+  for I := 0 to PlayerCapacity - 1 do
+    IPlayerTranslated[I] := ULanguage.Language.Translate('OPTION_PLAYER_' + IntToStr(I + 1));
 
   // Webcam
   IWebcamFlipTranslated[0]          := ULanguage.Language.Translate('OPTION_VALUE_OFF');
@@ -1181,7 +1324,7 @@ begin
       begin
         PlayerNumber :=
           IniFile.ReadInteger('Record', Format('Channel%d[%d]', [ChannelIndex+1, DeviceIndex]), CHANNEL_OFF);
-        if (PlayerNumber < 1) or (PlayerNumber > IMaxPlayerCount) then
+        if (PlayerNumber < 1) or (PlayerNumber > PlayerCapacity) then
           PlayerNumber := CHANNEL_OFF;
         DeviceCfg.ChannelToPlayerMap[ChannelIndex] := PlayerNumber;
       end;
@@ -1216,7 +1359,7 @@ begin
     for ChannelIndex := 0 to High(InputDeviceConfig[DeviceIndex].ChannelToPlayerMap) do
     begin
       PlayerNumber := InputDeviceConfig[DeviceIndex].ChannelToPlayerMap[ChannelIndex];
-      if (PlayerNumber >= 1) and (PlayerNumber <= IMaxPlayerCount) then
+      if (PlayerNumber >= 1) and (PlayerNumber <= PlayerCapacity) then
       begin
         IniFile.WriteInteger('Record',
             Format('Channel%d[%d]', [ChannelIndex+1, DeviceIndex+1]),
@@ -1520,13 +1663,24 @@ begin
 
   Log.LogStatus('Using config : ' + FileName.ToNative, 'Ini');
   IniFile := TMemIniFile.Create(FileName.ToNative);
+  PlayerCapacity := Max(DEFAULT_PLAYER_CAPACITY,
+    Max(IniFile.ReadInteger('Game', 'MaxPlayers', DEFAULT_PLAYER_CAPACITY),
+        IniFile.ReadInteger('Game', 'Players', 1)));
+  InitializePlayerOptionArrays;
+  SetLength(SingColor, PlayerCapacity);
+  SetLength(Name, PlayerCapacity);
+  SetLength(PlayerColor, PlayerCapacity);
+  SetLength(PlayerAvatar, PlayerCapacity);
+  SetLength(PlayerLevel, PlayerCapacity);
+  SetLength(NameTemplate, PlayerCapacity);
 
-  for I := 0 to IMaxPlayerCount-1 do
+
+  for I := 0 to High(Name) do
   begin
     // Name
     Name[I] := IniFile.ReadString('Name', 'P'+IntToStr(I+1), 'Player'+IntToStr(I+1));
     // Color Player
-    PlayerColor[I] := IniFile.ReadInteger('PlayerColor', 'P'+IntToStr(I+1), DefaultPlayerColors[I]);
+    PlayerColor[I] := IniFile.ReadInteger('PlayerColor', 'P'+IntToStr(I+1), GetDefaultPlayerColor(I));
     // Initialize session sing colors from the saved player colors so they are usable before the first song
     SingColor[I] := PlayerColor[I];
     // Avatar Player
@@ -1542,7 +1696,7 @@ begin
   // Templates for Names Mod
   for I := 0 to 2 do
     NameTeam[I] := IniFile.ReadString('NameTeam', 'T'+IntToStr(I+1), 'Team'+IntToStr(I+1));
-  for I := 0 to 11 do
+  for I := 0 to High(NameTemplate) do
     NameTemplate[I] := IniFile.ReadString('NameTemplate', 'Name'+IntToStr(I+1), 'Template'+IntToStr(I+1));
 
   // Players
@@ -1550,6 +1704,9 @@ begin
 
   // Difficulty
   Difficulty := ReadArrayIndex(IDifficulty, IniFile, 'Game', 'Difficulty', IGNORE_INDEX, 'Medium');
+
+  UltraQueueURL := IniFile.ReadString('UltraQueue', 'URL',
+    'http://ultraqueue.sebigbos.hhu-fscs.de');
 
   // Language
   Language := ReadArrayIndex(ILanguage, IniFile, 'Game', 'Language', IGNORE_INDEX, 'English');
@@ -1878,6 +2035,8 @@ begin
 
   try
   begin
+    IniFile.WriteString('UltraQueue', 'URL', UltraQueueURL);
+    IniFile.WriteInteger('Game', 'MaxPlayers', PlayerCapacity);
     // Players
     IniFile.WriteString('Game', 'Players', IPlayers[Players]);
 
@@ -2245,7 +2404,7 @@ begin
   IniFile := TSafeIniFile.Create(Filename.ToNative, 'TIni.SavePlayerColors');
   try
     //Colors for Names Mod
-    for I := 1 to IMaxPlayerCount do
+    for I := 1 to PlayerCapacity do
       IniFile.WriteString('PlayerColor', 'P' + IntToStr(I), IntToStr(PlayerColor[I-1]));
   finally
     IniFile.Free;
@@ -2260,7 +2419,7 @@ begin
   IniFile := TSafeIniFile.Create(Filename.ToNative, 'TIni.SavePlayerAvatars');
   try
     //Colors for Names Mod
-    for I := 1 to IMaxPlayerCount do
+    for I := 1 to PlayerCapacity do
       IniFile.WriteString('PlayerAvatar', 'P' + IntToStr(I), PlayerAvatar[I-1]);
   finally
     IniFile.Free;
@@ -2274,7 +2433,7 @@ var
 begin
   IniFile := TSafeIniFile.Create(Filename.ToNative, 'TIni.SavePlayerLevels');
   try
-    for I := 1 to IMaxPlayerCount do
+    for I := 1 to PlayerCapacity do
       IniFile.WriteInteger('PlayerLevel', 'P' + IntToStr(I), PlayerLevel[I-1]);
   finally
     IniFile.Free;

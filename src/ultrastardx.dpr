@@ -183,7 +183,7 @@ uses
   //Includes - base
   //------------------------------
   UConfig           in 'base\UConfig.pas',
-  
+
   UCommon           in 'base\UCommon.pas',
   URenderer         in 'base\URenderer.pas',
   URenderer_OpenGL  in 'base\URenderer_OpenGL.pas',
@@ -215,6 +215,8 @@ uses
   UPathUtils        in 'base\UPathUtils.pas',
   UNote             in 'base\UNote.pas',
   UBeatTimer        in 'base\UBeatTimer.pas',
+  UPlayerLayout     in 'base\UPlayerLayout.pas',
+  UUltraQueue       in 'base\UUltraQueue.pas',
 
   UText             in 'base\UText.pas',
   UUnicodeUtils     in 'base\UUnicodeUtils.pas',

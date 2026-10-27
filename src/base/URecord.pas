@@ -615,7 +615,7 @@ var
   i: integer;
 begin
   inherited;
-  SetLength(Sound, UIni.IMaxPlayerCount);
+  SetLength(Sound, UIni.PlayerCapacity);
   for i := 0 to High(Sound) do
     Sound[i] := TCaptureBuffer.Create;
 end;
@@ -708,10 +708,11 @@ var
   I, J: integer;
   PlayerID: integer;
   MaxPlayerID: integer;
-  PlayerMap: array [0 .. UIni.IMaxPlayerCount - 1] of boolean;
+  PlayerMap: array of boolean;
   InputDevice: TAudioInputDevice;
   InputDeviceCfg: PInputDeviceConfig;
 begin
+  SetLength(PlayerMap, UIni.PlayerCapacity);
   MaxPlayerID := Length(PlayerMap);
 
   // mark all players as unassigned

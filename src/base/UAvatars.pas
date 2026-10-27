@@ -57,8 +57,8 @@ var
   Avatars: TAvatarManager;
   AvatarsList: array of IPath;
   AvatarsMD5: array of UTF8String;
-  NoAvatarTexture: array[1..UIni.IMaxPlayerCount] of TTexture;
-  AvatarPlayerTextures: array[1..UIni.IMaxPlayerCount] of TTexture;
+  NoAvatarTexture: array of TTexture;
+  AvatarPlayerTextures: array of TTexture;
 
 implementation
 

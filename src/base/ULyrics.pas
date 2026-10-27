@@ -38,11 +38,12 @@ uses
   UIni,
   URenderer,
   UThemes,
-  UMusic;
+  UMusic,
+  UMenu;
 
 type
   TLyricsEffect = (lfxSimple, lfxZoom, lfxSlide, lfxBall, lfxShift);
-  
+
   PLyricWord = ^TLyricWord;
   TLyricWord = record
     X:          real;     // left corner
@@ -155,6 +156,7 @@ uses
   UGraphic,
   UDisplay,
   ULog,
+  UPath,
   math;
 
 { TLyricLine }
@@ -253,8 +255,6 @@ end;
  * player icons, a ball for the ball effect and the lyric indicator.
  *}
 procedure TLyricEngine.LoadTextures;
-var
-  I: Integer;
 begin
 
   // ball for current word hover in ball effect
@@ -302,7 +302,7 @@ begin
 
   // reset line state
   LyricLine.Reset();
-                          
+
   // check if sentence has notes
   if (Line <> nil) and (Length(Line.Notes) > 0) then
   begin
@@ -776,4 +776,3 @@ begin
 end;
 
 end.
-

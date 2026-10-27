@@ -366,16 +366,9 @@ begin
 
     channelCnt := paDeviceInfo^.maxInputChannels;
 
-    writeln('Detected AudioInputProcessor Device:');
-    writeln(ConvertPaStringToUTF8(paDeviceInfo^.name));
-    writeln(channelCnt);
-
     // current device is no input device -> skip
     if (channelCnt <= 0) then
-    begin
-      write('channelCnt <= 0: ');
       continue;
-    end;
 
     // workaround for https://github.com/alsa-project/alsa-plugins/issues/13
     if CompareStr(paDeviceInfo^.name, 'vdownmix') = 0 then

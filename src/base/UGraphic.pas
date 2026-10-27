@@ -199,29 +199,29 @@ var
   ScreenPopupHelp:  TScreenPopupHelp;
 
   //Notes
-  Tex_Left:        array[1..UIni.IMaxPlayerCount] of TTexture;   //rename to tex_note_left
-  Tex_Mid:         array[1..UIni.IMaxPlayerCount] of TTexture;   //rename to tex_note_mid
-  Tex_Right:       array[1..UIni.IMaxPlayerCount] of TTexture;   //rename to tex_note_right
+  Tex_Left:        array of TTexture;   //rename to tex_note_left
+  Tex_Mid:         array of TTexture;   //rename to tex_note_mid
+  Tex_Right:       array of TTexture;   //rename to tex_note_right
 
-  Tex_plain_Left:  array[1..UIni.IMaxPlayerCount] of TTexture;   //rename to tex_notebg_left
-  Tex_plain_Mid:   array[1..UIni.IMaxPlayerCount] of TTexture;   //rename to tex_notebg_mid
-  Tex_plain_Right: array[1..UIni.IMaxPlayerCount] of TTexture;   //rename to tex_notebg_right
+  Tex_plain_Left:  array of TTexture;   //rename to tex_notebg_left
+  Tex_plain_Mid:   array of TTexture;   //rename to tex_notebg_mid
+  Tex_plain_Right: array of TTexture;   //rename to tex_notebg_right
 
-  Tex_BG_Left:     array[1..UIni.IMaxPlayerCount] of TTexture;   //rename to tex_noteglow_left
-  Tex_BG_Mid:      array[1..UIni.IMaxPlayerCount] of TTexture;   //rename to tex_noteglow_mid
-  Tex_BG_Right:    array[1..UIni.IMaxPlayerCount] of TTexture;   //rename to tex_noteglow_right
+  Tex_BG_Left:     array of TTexture;   //rename to tex_noteglow_left
+  Tex_BG_Mid:      array of TTexture;   //rename to tex_noteglow_mid
+  Tex_BG_Right:    array of TTexture;   //rename to tex_noteglow_right
 
-  Tex_Left_Rap:        array[1..UIni.IMaxPlayerCount] of TTexture;   //rename to tex_note_left
-  Tex_Mid_Rap:         array[1..UIni.IMaxPlayerCount] of TTexture;   //rename to tex_note_mid
-  Tex_Right_Rap:       array[1..UIni.IMaxPlayerCount] of TTexture;   //rename to tex_note_right
+  Tex_Left_Rap:        array of TTexture;   //rename to tex_note_left
+  Tex_Mid_Rap:         array of TTexture;   //rename to tex_note_mid
+  Tex_Right_Rap:       array of TTexture;   //rename to tex_note_right
 
-  Tex_plain_Left_Rap:  array[1..UIni.IMaxPlayerCount] of TTexture;   //rename to tex_notebg_left
-  Tex_plain_Mid_Rap:   array[1..UIni.IMaxPlayerCount] of TTexture;   //rename to tex_notebg_mid
-  Tex_plain_Right_Rap: array[1..UIni.IMaxPlayerCount] of TTexture;   //rename to tex_notebg_right
+  Tex_plain_Left_Rap:  array of TTexture;   //rename to tex_notebg_left
+  Tex_plain_Mid_Rap:   array of TTexture;   //rename to tex_notebg_mid
+  Tex_plain_Right_Rap: array of TTexture;   //rename to tex_notebg_right
 
-  Tex_BG_Left_Rap:     array[1..UIni.IMaxPlayerCount] of TTexture;   //rename to tex_noteglow_left
-  Tex_BG_Mid_Rap:      array[1..UIni.IMaxPlayerCount] of TTexture;   //rename to tex_noteglow_mid
-  Tex_BG_Right_Rap:    array[1..UIni.IMaxPlayerCount] of TTexture;   //rename to tex_noteglow_right
+  Tex_BG_Left_Rap:     array of TTexture;   //rename to tex_noteglow_left
+  Tex_BG_Mid_Rap:      array of TTexture;   //rename to tex_noteglow_mid
+  Tex_BG_Right_Rap:    array of TTexture;   //rename to tex_noteglow_right
 
   // Inversions of first player colors used to mark selected note in editor
   Tex_Left_Inv: TTexture;
@@ -241,7 +241,7 @@ var
 
   Tex_TimeProgress: TTexture;
   Tex_JukeboxTimeProgress: TTexture;
-  
+
   //Sing Bar Mod
   Tex_SingBar_Back:  TTexture;
   Tex_SingBar_Bar:  TTexture;
@@ -253,17 +253,17 @@ var
   //End PhrasenBonus - Line Bonus Mod
 
   //ScoreBG Texs
-  Tex_ScoreBG: array [0..UIni.IMaxPlayerCount-1] of TTexture;
+  Tex_ScoreBG: array of TTexture;
 
   //Score Screen Textures
-    Tex_Score_NoteBarLevel_Dark     : array [1..UIni.IMaxPlayerCount] of TTexture;
-    Tex_Score_NoteBarRound_Dark     : array [1..UIni.IMaxPlayerCount] of TTexture;
+    Tex_Score_NoteBarLevel_Dark     : array of TTexture;
+    Tex_Score_NoteBarRound_Dark     : array of TTexture;
 
-    Tex_Score_NoteBarLevel_Light    : array [1..UIni.IMaxPlayerCount] of TTexture;
-    Tex_Score_NoteBarRound_Light    : array [1..UIni.IMaxPlayerCount] of TTexture;
+    Tex_Score_NoteBarLevel_Light    : array of TTexture;
+    Tex_Score_NoteBarRound_Light    : array of TTexture;
 
-    Tex_Score_NoteBarLevel_Lightest : array [1..UIni.IMaxPlayerCount] of TTexture;
-    Tex_Score_NoteBarRound_Lightest : array [1..UIni.IMaxPlayerCount] of TTexture;
+    Tex_Score_NoteBarLevel_Lightest : array of TTexture;
+    Tex_Score_NoteBarRound_Lightest : array of TTexture;
 
     Tex_Score_Ratings               : array [0..7] of TTexture;  //stores all possible rating result images
 
@@ -324,6 +324,7 @@ implementation
 uses
   Classes,
   Math,
+  UNote,
   UDisplay,
   UCommandLine,
   UPathUtils,
@@ -438,7 +439,7 @@ procedure UnloadSingScreenTextures;
 var
   I: integer;
 begin
-  for I := 1 to UIni.IMaxPlayerCount do
+  for I := 1 to High(Tex_Left) do
   begin
     FreeAndNil(Tex_Left[I]);
     FreeAndNil(Tex_Mid[I]);
@@ -481,7 +482,33 @@ begin
   else if SingScreenTexturesLoaded then
     Exit;
 
-  for I := 1 to UIni.IMaxPlayerCount do
+  SetLength(Tex_Left, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_Mid, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_Right, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_plain_Left, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_plain_Mid, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_plain_Right, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_BG_Left, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_BG_Mid, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_BG_Right, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_Left_Rap, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_Mid_Rap, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_Right_Rap, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_plain_Left_Rap, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_plain_Mid_Rap, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_plain_Right_Rap, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_BG_Left_Rap, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_BG_Mid_Rap, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_BG_Right_Rap, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_ScoreBG, Max(1, PlayersPlay));
+  SetLength(Tex_Score_NoteBarLevel_Dark, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_Score_NoteBarRound_Dark, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_Score_NoteBarLevel_Light, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_Score_NoteBarRound_Light, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_Score_NoteBarLevel_Lightest, Max(1, PlayersPlay) + 1);
+  SetLength(Tex_Score_NoteBarRound_Lightest, Max(1, PlayersPlay) + 1);
+
+  for I := 1 to Max(1, PlayersPlay) do
   begin
     Col := GetPlayerColor(Ini.SingColor[I - 1]);
     Color := (Trunc(255 * Col.R) shl 16) or
